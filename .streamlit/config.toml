@@ -1,0 +1,10 @@
+[theme]
+primaryColor = "#22d3ee"
+backgroundColor = "#0f172a"
+secondaryBackgroundColor = "#1e293b"
+textColor = "#e2e8f0"
+font = "sans serif"
+
+[ui]
+# This forces the app to always open in dark mode
+base = "dark"
