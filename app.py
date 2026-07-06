@@ -4,7 +4,7 @@
 ║                 Institutional-Grade Portfolio Optimization Platform          ║
 ╠══════════════════════════════════════════════════════════════════════════════╣
 ║  Built with: Streamlit | SciPy | Scikit-learn | Plotly | yFinance           ║
-║  Author: AI Assistant | Version: 2.0.0 | License: MIT                        ║
+║  Author: AI Assistant | Version: 2.0.1 | License: MIT                        ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 """
 
@@ -67,10 +67,12 @@ class FinancialAnalyticsEngine:
             else:
                 prices = raw['Close'].copy()
 
-            # Safety check: stop with a clear message if download failed
-            prices = prices.dropna(how='all')
+            # Ensure data is numeric and drop empty rows
+            prices = prices.apply(pd.to_numeric, errors='coerce').dropna(how='all')
+
+            # Safety check: Stop gracefully if download failed
             if prices.empty:
-                st.error("❌ Market data download failed. Check your internet connection.")
+                st.error("⚠️ Market data download failed. This usually happens due to a temporary API limit. Please refresh the page in 1 minute.")
                 st.stop()
                 
             returns = np.log(prices / prices.shift(1))
@@ -187,7 +189,6 @@ class FinancialAnalyticsEngine:
             roc_aucs.append(auc)
             importances += model.feature_importances_
             rep = classification_report(y_test, model.predict(X_test), output_dict=True)
-            # Safely add your custom tracking data
             rep['fold'] = fold
             rep['roc_auc'] = auc
             reports.append(rep)
@@ -227,7 +228,12 @@ if page == "🏠 Dashboard":
     cols = st.columns(5)
     for i, t in enumerate(engine.tickers):
         cols[i].metric(t, f"{perf.loc[t, 'Ann. Return']:.1%}", f"Sharpe: {perf.loc[t, 'Sharpe Ratio']:.2f}")
-    st.line_chart((prices / prices.iloc[0] * 100))
+    
+    # Safe chart rendering to prevent IndexError on Streamlit Cloud
+    if not prices.empty and len(prices) > 0:
+        st.line_chart(prices.div(prices.iloc[0], axis=1) * 100)
+    else:
+        st.warning("No price data available to display the chart.")
 
 elif page == "📈 Risk":
     st.header("Risk Analytics")
